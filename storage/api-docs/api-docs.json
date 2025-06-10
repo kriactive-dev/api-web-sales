@@ -1,0 +1,38 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "API de Gestão de Usuários",
+        "description": "Documentação oficial da API de gestão de usuários.",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/api/users": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Listar todos os usuários",
+                "operationId": "getUsersList",
+                "responses": {
+                    "200": {
+                        "description": "Lista de usuários retornada com sucesso"
+                    },
+                    "401": {
+                        "description": "Não autorizado"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Users",
+            "description": "Endpoints para gerenciamento de usuários"
+        }
+    ]
+}
