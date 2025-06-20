@@ -19,12 +19,15 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['https://demo.websales-mz.com',
+    'allowed_origins' => [
+    'https://demo.websales-mz.com',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:5173',       // exemplo Vite
     'http://127.0.0.1:5173',       // exemplo Vite
     'http://localhost:8080',       // exemplo Vue CLI
+    'http://localhost:5173',       // exemplo Vite
+    'http://127.0.0.1:5173',       // exemplo Vite
     ],
 
     'allowed_origins_patterns' => [],
