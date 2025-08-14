@@ -126,13 +126,13 @@ class ChatBotController extends Controller
                         
 
                         case 'situacao_academica':
-                            Cache::put("awaiting_student_number_$from", 'academica', now()->addSeconds(45));
+                            Cache::put("awaiting_student_number_$from", 'academica', now()->addSeconds(60));
                             Interaction::create(['user_phone' => $from,'option' => 'situacao_academica',]);
                             $this->enviarMensagemWhatsApp($from, "Por favor, envie o número do seu código de estudante para verificarmos o estado da sua situação academica.");
                             break;
 
                         case 'situacao_financeira':
-                            Cache::put("awaiting_student_number_$from", 'financeira', now()->addSeconds(45));
+                            Cache::put("awaiting_student_number_$from", 'financeira', now()->addSeconds(60));
                             Interaction::create(['user_phone' => $from,'option' => 'situacao_financeira',]);
                             $this->enviarMensagemWhatsApp($from, "Por favor, envie o número do seu código de estudante para verificarmos o estado da sua situação financeira.");
                             break;
