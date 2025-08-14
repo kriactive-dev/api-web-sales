@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ChatBotController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\UserController;
@@ -37,3 +38,11 @@ Route::prefix('permissions')->group(function () {
     Route::put('{permission}', [PermissionController::class, 'update']);
     Route::delete('{permission}', [PermissionController::class, 'destroy']);
 });
+
+Route::get('/whatsapp/{number}', [ChatBotController::class, 'sendwhatsapp']);
+
+Route::get('/webhook', [ChatBotController::class, 'getwebhook']);
+// Route::post('/webhook', [ChatBotController::class, 'postwebhook']);
+
+Route::post('/webhook', [ChatBotController::class, 'handleWebhook']);
+// Route::post('/chatbot/answer', [ChatBotController::class, 'handleAnswer']);
