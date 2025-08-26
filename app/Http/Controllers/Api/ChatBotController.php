@@ -94,8 +94,8 @@ class ChatBotController extends Controller
                     $from = $message['from'];
                     $text = $message['text']['body'] ?? '';
 
-                    if (strtolower($text) === 'olá' || strtolower($text) === 'oi' || strtolower($text) === 'ajuda') {
-                        $this->sendWhatsAppMessage($from, 'Universidade Católica de Moçambique. Como posso ajudar?', [
+                    if (strtolower($text) === 'olá' || strtolower($text) === 'oi' || strtolower($text) === 'ajuda' || strtolower($text) === 'ola') {
+                        $this->sendWhatsAppMessage($from, 'Olá, seja bem vindo ao atendimento automático da Universidade Católica de Moçambique. Como posso ajudar?', [
                         'Ver cursos' => 'ver_cursos',
                         'Situação academica' => 'situacao_academica',
                         'Situação financeira' => 'situacao_financeira',
@@ -124,7 +124,6 @@ class ChatBotController extends Controller
                             break;
 
                         
-
                         case 'situacao_academica':
                             Cache::put("awaiting_student_number_$from", 'academica', now()->addSeconds(60));
                             Interaction::create(['user_phone' => $from,'option' => 'situacao_academica',]);
