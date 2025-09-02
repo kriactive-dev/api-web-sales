@@ -14,7 +14,7 @@ class WhatsAppHelper
 
     public static function formatHeaderText($text)
     {
-        $maxLength = 60;
+        $maxLength = 24;
         if (mb_strlen($text) > $maxLength) {
             // Corta e adiciona reticências
             return mb_substr($text, 0, $maxLength - 3) . '...';
@@ -33,7 +33,7 @@ class WhatsAppHelper
 
     public static function formatButtonTitle($text)
     {
-        $maxLength = 20;
+        $maxLength = 24;
         if (mb_strlen($text) > $maxLength) {
             return mb_substr($text, 0, $maxLength - 3) . '...';
         }

@@ -62,7 +62,9 @@ const onSubmit = handleSubmit((values) => {
         <form @submit="onSubmit">
             <div class="flex flex-col gap-2">
                 <label for="text">Texto da Pergunta *</label>
-                <InputText v-model="text" id="text" placeholder="Digite a pergunta" :class="{ 'p-invalid': errors.text }" />
+                <!-- <InputText v-model="text" id="text" placeholder="Digite a pergunta" :class="{ 'p-invalid': errors.text }" /> -->
+                <Textarea v-model="text" rows="5" cols="50" placeholder="Digite a pergunta" />
+                <!-- <Editor v-model="text" editorStyle="height: 320px" /> -->
                 <small class="p-error">{{ errors.text }}</small>
             </div>
             <div class="flex flex-col gap-2">

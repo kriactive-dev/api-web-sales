@@ -8,6 +8,9 @@ use Illuminate\Http\Request;
 
 class QuestionController extends Controller
 {
+    public function getall(){
+        return response()->json(QuestionBot::with('options')->orderBy('id', 'asc')->get());
+    }
     public function index()
     {
         return response()->json(QuestionBot::with('options')->orderBy('id', 'asc')->paginate());
@@ -26,6 +29,13 @@ class QuestionController extends Controller
             'is_start' => 'boolean',
             'active' => 'boolean',
         ]);
+
+        if (isset($validated['is_start']) && $validated['is_start']) {
+            $exists = QuestionBot::where('is_start', true)->exists();
+            if ($exists) {
+                return response()->json(['message' => 'Já existe uma pergunta inicial.'], 422);
+            }
+        }
 
         $question = QuestionBot::create($validated);
 

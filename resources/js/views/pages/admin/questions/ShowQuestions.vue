@@ -13,7 +13,10 @@ const displayConfirmation = ref(false);
 const retriviedData = ref({});
 const questionsList = ref([]); // Lista de perguntas para o Dropdown
 const dataIdBeingDeleted = ref(null);
+const dataIdBeingEdited = ref(null);
+
 const showAddOptionDialog = ref(false);
+const showEditOptionDialog = ref(false);
 const newOption = ref({
   label: '',
   value: '',
@@ -33,6 +36,29 @@ function submitOption() {
       newOption.value = { label: '', value: '', next_question_bot_id: '' };
     });
 }
+function submitEditOption() {
+  isLoadingDiv.value = true;
+  const payload = {
+    label: dataIdBeingEdited.value.label,
+    value: dataIdBeingEdited.value.value,
+    next_question_bot_id: dataIdBeingEdited.value.next_question_bot_id,
+    _method: 'PUT',
+    // question_bot_id: retriviedData.value.id
+  };
+  axios
+    .post(`/api/options/${dataIdBeingEdited.value.id}`, payload)
+    .then(() => {
+      toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Opção editada!', life: 3000 });
+      showEditOptionDialog.value = false;
+      getData();
+    })
+    .catch((error) => {
+      toast.add({ severity: 'error', summary: 'Erro', detail: 'Erro ao editar opção', life: 3000 });
+    })
+    .finally(() => {
+      isLoadingDiv.value = false;
+    });
+}
 
 function goBackUsingBack() {
     router.back();
@@ -41,9 +67,10 @@ function goBackUsingBack() {
 const closeConfirmation = () => {
     displayConfirmation.value = false;
 };
-const confirmDeletion = (id) => {
-    displayConfirmation.value = true;
-    dataIdBeingDeleted.value = id;
+const editOption = (data) => {
+    dataIdBeingEdited.value = data;
+    showEditOptionDialog.value = true;
+    // newOption.value = { label: data.label, value: data.value, next_question_bot_id: data.next_question_bot_id };
 };
 
 const getData = async () => {
@@ -128,7 +155,7 @@ onMounted(() => {
   header="Nova Opção" 
   v-model:visible="showAddOptionDialog" 
   :modal="true"
-  :style="{ width: '400px', borderRadius: '12px' }"
+  :style="{ width: '600px', borderRadius: '12px' }"
 >
   <form @submit.prevent="submitOption" class="flex flex-col gap-4 p-2">
     <div>
@@ -153,12 +180,46 @@ onMounted(() => {
         showClear
     />
     </div>
-    <!-- <div>
-      <label for="next_question_bot_id" class="font-semibold mb-1 block">Próxima Pergunta (ID)</label>
-      <InputText v-model="newOption.next_question_bot_id" id="next_question_bot_id" class="w-full" />
-    </div> -->
     <div class="flex justify-end gap-2 mt-2">
       <Button label="Cancelar" icon="pi pi-times" class="p-button-text" @click="showAddOptionDialog = false" />
+      <Button label="Salvar" type="submit" icon="pi pi-check" severity="success" />
+    </div>
+  </form>
+</Dialog>
+
+
+<Dialog 
+  header="Editar Opção" 
+  v-model:visible="showEditOptionDialog" 
+  :modal="true"
+  :style="{ width: '600px', borderRadius: '12px' }"
+>
+  <form @submit.prevent="submitEditOption" class="flex flex-col gap-4 p-2">
+    <div>
+      <label for="label" class="font-semibold mb-1 block">Texto do Botão</label>
+      <InputText v-model="dataIdBeingEdited.label" id="label" class="w-full" />
+    </div>
+    <div>
+      <label for="value" class="font-semibold mb-1 block">Valor</label>
+      <InputText v-model="dataIdBeingEdited.value" id="value" class="w-full" />
+    </div>
+    <div>
+  <label for="next_question_bot_id" class="font-semibold mb-1 block">Próxima Pergunta</label>
+    <Dropdown
+        v-model="dataIdBeingEdited.next_question_bot_id"
+        id="next_question_bot_id"
+        :options="questionsList"
+        optionLabel="text"
+        optionValue="id"
+        filter
+        placeholder="Selecione a próxima pergunta"
+        class="w-full" 
+        showClear
+    />
+    </div>
+   
+    <div class="flex justify-end gap-2 mt-2">
+      <Button label="Cancelar" icon="pi pi-times" class="p-button-text" @click="showEditOptionDialog = false" />
       <Button label="Salvar" type="submit" icon="pi pi-check" severity="success" />
     </div>
   </form>

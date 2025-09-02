@@ -75,3 +75,5 @@ Route::get('/questions/{id}/options', [OptionController::class, 'indexByQuestion
 Route::get('/webhook', [ChatBotUcmController::class, 'getwebhook']);
 
 Route::post('/webhook', [ChatBotUcmController::class, 'handleWebhook']);
+
+Route::get('/getallquestions', [QuestionController::class, 'getall']);

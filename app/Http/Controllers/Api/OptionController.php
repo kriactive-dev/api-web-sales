@@ -26,7 +26,7 @@ class OptionController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'question_bot_id' => 'required|exists:questions,id',
+            'question_bot_id' => 'required',
             'label' => 'required|string',
             'value' => 'required|string',
             'next_question_bot_id' => 'nullable',
@@ -43,10 +43,10 @@ class OptionController extends Controller
         $option = OptionBot::findOrFail($id);
 
         $validated = $request->validate([
-            'question_id' => 'sometimes|exists:questions,id',
+            'question_bot_id' => 'sometimes',
             'label' => 'sometimes|required|string',
             'value' => 'sometimes|required|string',
-            'next_question_id' => 'nullable|exists:questions,id',
+            'next_question_bot_id' => 'nullable',
         ]);
 
         $option->update($validated);
