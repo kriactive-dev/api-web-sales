@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\OptionBot;
 use App\Models\QuestionBot;
+use App\Models\Student;
+use App\Models\StudentUcm;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -62,13 +64,24 @@ class ChatBotUcmController extends Controller
 
             if ($type === 'interactive') {
                 Log::info('interactive');
-                // Log::info("User $from clicked a button in question $currentQuestionId");
-                // Usuário clicou em um botão
                 $payload = $message['interactive']['button_reply']['id'] ?? null;
                 if (!$payload) {
                     $payload = $message['interactive']['list_reply']['id'] ?? null;
                 }
                 Log::info('payload '.$payload);
+
+                // Situação acadêmica
+                if ($payload === 'situacao_academica') {
+                    Cache::put("awaiting_student_code_$from", 'academica', now()->addMinutes(5));
+                    $this->sendWhatsAppMessage($from, "Situação acadêmica: Insira seu código de estudante para verificar a sua situação acadêmica.");
+                    return response()->json(['status' => 'awaiting_student_code_academica']);
+                }
+                // Situação financeira
+                if ($payload === 'situacao_financeira') {
+                    Cache::put("awaiting_student_code_$from", 'financeira', now()->addMinutes(5));
+                    $this->sendWhatsAppMessage($from, "Situação financeira: Insira seu código de estudante para verificar a sua situação financeira.");
+                    return response()->json(['status' => 'awaiting_student_code_financeira']);
+                }
 
                 if ($payload === 'voltar') {
                     $history = Cache::get("question_history_$from", []);
@@ -80,14 +93,12 @@ class ChatBotUcmController extends Controller
                         Cache::put("current_question_$from", $previousQuestionId, now()->addMinutes(10));
                         Cache::put("question_history_$from", $history, now()->addMinutes(10));
                     } else {
-                        // Se não tem anterior, volta ao início
                         $this->sendWhatsAppMessage($from, "Olá! Digite 'ajuda' para receber opções.");
                         Cache::forget("current_question_$from");
                         Cache::forget("question_history_$from");
                     }
                     return response()->json(['status' => 'back']);
                 }
-                // Log::info("Button clicked by user $from in question $currentQuestionId: $payload");
                 if ($payload) {
                     $option = OptionBot::where('question_bot_id', $question->id)
                         ->where('value', $payload)
@@ -108,7 +119,6 @@ class ChatBotUcmController extends Controller
                             Cache::forget("question_history_$from");
                         }
                     } else {
-                        // Fluxo termina aqui
                         $this->sendWhatsAppMessage($from, "Obrigado! Seu atendimento foi finalizado.");
                         Cache::forget("current_question_$from");
                         Cache::forget("question_history_$from");
@@ -116,10 +126,24 @@ class ChatBotUcmController extends Controller
                     return response()->json(['status' => 'option processed']);
                 }
             } else {
+                // Se estiver aguardando código de estudante
+                $awaiting = Cache::get("awaiting_student_code_$from");
+                if ($awaiting && !empty($text)) {
+                    $student = StudentUcm::where('code', $text)->first();
+                    if ($student) {
+                        if ($awaiting === 'academica') {
+                            $this->sendWhatsAppMessage($from, "Situação acadêmica do estudante {$student->name}: {$student->situacao_academica}");
+                        } else {
+                            $this->sendWhatsAppMessage($from, "Situação financeira do estudante {$student->name}: {$student->situacao_financeira}");
+                        }
+                    } else {
+                        $this->sendWhatsAppMessage($from, "Código de estudante não encontrado. Tente novamente.");
+                    }
+                    Cache::forget("awaiting_student_code_$from");
+                    return response()->json(['status' => 'student_code_checked']);
+                }
                 // Pergunta do tipo texto (aberta)
                 if ($question->type === 'text') {
-                    // Salvar ou processar a resposta do usuário se quiser
-                    // Encontrar próxima pergunta, se existir
                     $option = $question->options->first(); // normalmente só uma opção para perguntas abertas
                     if ($option && $option->next_question_bot_id) {
                         $nextQuestion = QuestionBot::where('id', $option->next_question_bot_id)->where('active', true)->with('options')->first();
