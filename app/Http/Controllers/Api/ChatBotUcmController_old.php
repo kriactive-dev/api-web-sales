@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 use App\WhatsAppHelper;
 
 
-class ChatBotUcmController extends Controller
+class ChatBotUcmControllerX extends Controller
 {
     //
     /**
