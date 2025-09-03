@@ -70,6 +70,21 @@ class ChatBotUcmController extends Controller
                 }
                 Log::info('payload '.$payload);
 
+                // Tratamento de paginação
+                $page = Cache::get("current_page_$from", 1);
+                if ($payload === 'proximo') {
+                    $page++;
+                    Cache::put("current_page_$from", $page, now()->addMinutes(10));
+                    $this->sendWhatsAppListMessage($from, $question, $page);
+                    return response()->json(['status' => 'page_next']);
+                }
+                if ($payload === 'anterior') {
+                    $page = max(1, $page - 1);
+                    Cache::put("current_page_$from", $page, now()->addMinutes(10));
+                    $this->sendWhatsAppListMessage($from, $question, $page);
+                    return response()->json(['status' => 'page_prev']);
+                }
+
                 if ($payload === 'voltar') {
                     $history = Cache::get("question_history_$from", []);
                     array_pop($history); // Remove a atual
@@ -85,6 +100,7 @@ class ChatBotUcmController extends Controller
                         Cache::forget("current_question_$from");
                         Cache::forget("question_history_$from");
                     }
+                    Cache::forget("current_page_$from"); // Limpa a página quando volta
                     return response()->json(['status' => 'back']);
                 }
                 // Log::info("Button clicked by user $from in question $currentQuestionId: $payload");
@@ -102,16 +118,19 @@ class ChatBotUcmController extends Controller
                             $history[] = $question->id;
                             Cache::put("question_history_$from", $history, now()->addMinutes(10));
                             Cache::put("current_question_$from", $nextQuestion->id, now()->addMinutes(10));
+                            Cache::forget("current_page_$from"); // Reset página ao mudar pergunta
                         } else {
                             $this->sendWhatsAppMessage($from, "Obrigado! Seu atendimento foi finalizado.");
                             Cache::forget("current_question_$from");
                             Cache::forget("question_history_$from");
+                            Cache::forget("current_page_$from");
                         }
                     } else {
                         // Fluxo termina aqui
                         $this->sendWhatsAppMessage($from, "Obrigado! Seu atendimento foi finalizado.");
                         Cache::forget("current_question_$from");
                         Cache::forget("question_history_$from");
+                        Cache::forget("current_page_$from");
                     }
                     return response()->json(['status' => 'option processed']);
                 }
@@ -129,15 +148,18 @@ class ChatBotUcmController extends Controller
                             $history[] = $question->id;
                             Cache::put("question_history_$from", $history, now()->addMinutes(10));
                             Cache::put("current_question_$from", $nextQuestion->id, now()->addMinutes(10));
+                            Cache::forget("current_page_$from"); // Reset página ao mudar pergunta
                         } else {
                             $this->sendWhatsAppMessage($from, "Obrigado! Seu atendimento foi finalizado.");
                             Cache::forget("current_question_$from");
                             Cache::forget("question_history_$from");
+                            Cache::forget("current_page_$from");
                         }
                     } else {
                         $this->sendWhatsAppMessage($from, "Obrigado! Seu atendimento foi finalizado.");
                         Cache::forget("current_question_$from");
                         Cache::forget("question_history_$from");
+                        Cache::forget("current_page_$from");
                     }
                     return response()->json(['status' => 'text processed']);
                 }
@@ -150,30 +172,57 @@ class ChatBotUcmController extends Controller
         }
     }
 
-    private function sendWhatsAppListMessage($to, $question)
+    private function sendWhatsAppListMessage($to, $question, $page = 1)
 {
     try {
         $token = 'EAAQZCPJhz2wYBO5vcfZCCMfvbIOvujugelg0DDGZAHZBC51dhH7P68Xob46OorOFhk05OkvtEvsMniN8i7Q8YgFGVwKZBbLnynHUBboENOX19McBKVXJ8ZC6CFvOAnOJHQPlgpZBUkONpWR30ZAQETfHlULTqXixrXj9OHPkBKrZBBnmatM3CB0p3SlhyCZBXXLbHaTwZDZD'; // coloque seu token no .env
         $phone_number_id = '397344770133312'; // coloque seu id no .env
 
-        // Monta as opções do menu (até 10 por lista)
-        $ids = [];
-        $rows = [];
-        foreach ($question->options as $option) {
-            $rows[] = [
-                'id' => $option->value,      // payload retornado na resposta
-                'title' => WhatsappHelper::formatRowTitle($option->label),   // texto do item da lista
-                'description' => $option->label,         // opcional (ex: explicação)
-            ];
-            $ids[] = $option->value;
-        }
+        // Paginação das opções (9 por página, pois o botão "Voltar" ocupa 1 slot)
+        $options = $question->options;
+        $perPage = 9; // Máximo 9 opções por página (1 slot reservado para "Voltar")
+        $total = $options->count();
+        $pages = ceil($total / $perPage);
+        $offset = ($page - 1) * $perPage;
+        $currentOptions = $options->slice($offset, $perPage);
 
-        if (!($question->is_start ?? false) && !in_array('voltar', $ids)) {
+        $rows = [];
+        foreach ($currentOptions as $option) {
             $rows[] = [
-                'id' => 'voltar',
-                'title' => 'Voltar',
+                'id' => $option->value,
+                'title' => WhatsappHelper::formatRowTitle($option->label),
                 'description' => '',
             ];
+        }
+
+        // Botões de navegação (se necessário)
+        if ($page > 1) {
+            $rows[] = [
+                'id' => 'anterior',
+                'title' => '⬅️ Anterior',
+                'description' => '',
+            ];
+        }
+        if ($page < $pages) {
+            $rows[] = [
+                'id' => 'proximo',
+                'title' => '➡️ Próximo',
+                'description' => '',
+            ];
+        }
+
+        // Botão "Voltar" (sempre presente, exceto na pergunta inicial)
+        if (!($question->is_start ?? false)) {
+            $rows[] = [
+                'id' => 'voltar',
+                'title' => '🔙 Voltar',
+                'description' => '',
+            ];
+        }
+
+        $footerText = 'Selecione uma opção abaixo:';
+        if ($pages > 1) {
+            $footerText = "Página $page de $pages - Selecione uma opção:";
         }
 
         $body = [
@@ -182,15 +231,11 @@ class ChatBotUcmController extends Controller
             'type' => 'interactive',
             'interactive' => [
                 'type' => 'list',
-                // 'header' => [
-                //     'type' => 'text',
-                //     'text' => 'Escolha uma opção:',
-                // ],
                 'body' => [
                     'text' => $question->text,
                 ],
                 'footer' => [
-                    'text' => 'Selecione uma opção abaixo:',
+                    'text' => $footerText,
                 ],
                 'action' => [
                     'button' => 'Escolher',
@@ -262,8 +307,10 @@ class ChatBotUcmController extends Controller
             $this->sendWhatsAppMessage($to, $question->text, $buttons);
 
         } elseif ($count > 3) {
-            // 4+ opções: envia como lista
-            $this->sendWhatsAppListMessage($to, $question);
+            // 4+ opções: envia como lista paginada
+            $page = 1;
+            Cache::put("current_page_$to", $page, now()->addMinutes(10));
+            $this->sendWhatsAppListMessage($to, $question, $page);
 
         } else {
             // Sem opções: envia só texto
