@@ -13,7 +13,7 @@ class QuestionController extends Controller
     }
     public function index()
     {
-        return response()->json(QuestionBot::with('options')->orderBy('id', 'asc')->paginate());
+        return response()->json(QuestionBot::with('options')->orderBy('id', 'asc')->paginate(100));
     }
 
     public function show($id)

@@ -21,7 +21,7 @@ let dataIdBeingDeleted = ref(null);
 const searchQuery = ref('');
 const retriviedData = ref(null);
 const currentPage = ref(1);
-const rowsPerPage = ref(15);
+const rowsPerPage = ref(100);
 const totalRecords = ref(0);
 const displayConfirmation = ref(false);
 
@@ -68,6 +68,7 @@ const getData = async (page = 1) => {
         .then((response) => {
             retriviedData.value = response.data;
             totalRecords.value = response.data.total;
+            rowsPerPage.value = response.data.per_page;
             isLoadingDiv.value = false;
         })
         .catch((error) => {
